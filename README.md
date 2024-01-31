@@ -10,6 +10,7 @@ git clone nanika repo
 conda activate nanika_env
 ```
 ## Download the model
+Warning the arxiv is 14G!
 ```bash
 mkdir $HOME/Bureau/MISTRAL_DWL_NANIKA && cd $HOME/Bureau/MISTRAL_DWL_NANIKA
 wget https://files.mistral-7b-v0-1.mistral.ai/mistral-7B-v0.1.tar
