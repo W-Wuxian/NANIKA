@@ -1,0 +1,3 @@
+[submodule "mistral-src"]
+	path = mistral-src
+	url = git@github.com:mistralai/mistral-src.git
