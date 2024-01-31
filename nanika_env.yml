@@ -5,9 +5,9 @@ channels:
  - xformers
  - conda-forge
 dependencies:
- - python=3.11
+ - python>=3.11
  - fire           # Python Fire is a library for creating command line interfaces (CLIs) from absolutely any Python object
  - sentencepiece  # Unsupervised text tokenizer for Neural Network-based text generation
- - pytorch>=2.1.0   # PyTorch is an optimized tensor library for deep learning using GPUs and CPUs
+ - pytorch[and-gpu]>=2.0.1   # PyTorch is an optimized tensor library for deep learning using GPUs and CPUs
  - xformers       # Hackable and optimized Transformers building blocks, supporting a composable construction
  - simple-parsing # A small utility for simplifying and cleaning up argument parsing scripts

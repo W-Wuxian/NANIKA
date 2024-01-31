@@ -25,9 +25,9 @@ tar -xf mistral-7B-v0.1.tar
 ```
 ## run the model
 ```bash
-cd $HOME/Bureau/NANIKA/
-python -m mistral-src/main demo $HOME/Bureau/MISTRAL_DWL_NANIKA/mistral-7B-v0.1/
+cd $HOME/Bureau/NANIKA/mistral-src
+python -m main demo $HOME/Bureau/MISTRAL_DWL_NANIKA/mistral-7B-v0.1/
 # To give your own prompts
-python -m mistral-src/main interactive $HOME/Bureau/MISTRAL_DWL_NANIKA/mistral-7B-v0.1/
+python -m main interactive $HOME/Bureau/MISTRAL_DWL_NANIKA/mistral-7B-v0.1/
 ```
 And other things at [README Mistral-src](https://github.com/mistralai/mistral-src/tree/main)
