@@ -13,6 +13,7 @@ Or in One line:
 git clone --recurse-submodules git@github.com:W-Wuxian/NANIKA.git
 ```
 ## Activate Mistral dependencies:
+[pytorch-gpu info](https://pytorch.org/)
 ```bash
 conda activate nanika_env
 ```
