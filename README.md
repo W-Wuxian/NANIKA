@@ -17,6 +17,14 @@ git clone --recurse-submodules git@github.com:W-Wuxian/NANIKA.git
 ```bash
 conda activate nanika_env
 ```
+### Alternative using Python-venv
+```bash
+python -m venv nanika_venv
+pip install --upgrade fire sentencepiece torch>=2.1.0 xformers simple-parsing
+python -m main demo /path/to/mistral-7B-v0.1/
+# To give your own prompts
+python -m main interactive /path/to/mistral-7B-v0.1/
+```
 ## Download the model
 Warning the arxiv is 14G!
 ```bash
