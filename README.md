@@ -1,5 +1,4 @@
-# Testing [Mistral-src](https://github.com/mistralai/mistral-src/tree/main) 
-
+# Testing [langchain rag](https://github.com/tonykipkemboi/ollama_pdf_rag/blob/main/local_ollama_rag.ipynb)
 # Get Nanika repo
 See how to clone a project with Submodules at [Git-Tools-submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
 ```bash
@@ -12,35 +11,25 @@ Or in One line:
 ```bash
 git clone --recurse-submodules git@github.com:W-Wuxian/NANIKA.git
 ```
-## Activate Mistral dependencies:
-[pytorch-gpu info](https://pytorch.org/)
+## Install [ollama](https://github.com/ollama/ollama?tab=readme-ov-file)
+After a successful installation run:
 ```bash
-conda activate nanika_env
+ollama pull nomic-embed-text
+ollama pull phi
+ollama list
+```
+
+## Activate langchain dependencies:
+
+```bash
+conda create -f langchain_rag_env.yml
+conda activate langchain_rag_env
+pip install "unstructured[all-docs]"
+pip install chromadb langchain-text-splitters
 ```
 ### Alternative using Python-venv
 ```bash
-python -m venv nanika_venv
-pip install --upgrade fire sentencepiece torch>=2.1.0 xformers simple-parsing
-python -m main demo /path/to/mistral-7B-v0.1/
-# To give your own prompts
-python -m main interactive /path/to/mistral-7B-v0.1/
+python -m venv langchain_rag_venv
+pip install --upgrade unstructured langchain "unstructured[all-docs]"
+pip install --upgrade chromadb langchain-text-splitters
 ```
-## Download the model
-Warning the arxiv is 14G!
-```bash
-mkdir $HOME/MISTRAL_DWL_NANIKA && cd $HOME/MISTRAL_DWL_NANIKA
-wget https://files.mistral-7b-v0-1.mistral.ai/mistral-7B-v0.1.tar
-tar -xf mistral-7B-v0.1.tar
-```
-## run the model
-```bash
-cd $HOME/NANIKA/mistral-src
-python -m main demo $HOME/MISTRAL_DWL_NANIKA/mistral-7B-v0.1/
-# To give your own prompts
-python -m main interactive $HOME/MISTRAL_DWL_NANIKA/mistral-7B-v0.1/
-```
-And other things at [README Mistral-src](https://github.com/mistralai/mistral-src/tree/main)
-
-# TODO
-- [ ] Rerun the env file on my local machine
-- [ ] on mistral-hermes add more memory
