@@ -11,6 +11,8 @@ Or in One line:
 ```bash
 git clone --recurse-submodules git@github.com:W-Wuxian/NANIKA.git
 ```
+Or without submodule:
+git clone 
 ## Install [ollama](https://github.com/ollama/ollama?tab=readme-ov-file)
 After a successful installation run:
 ```bash
@@ -33,3 +35,14 @@ python -m venv langchain_rag_venv
 pip install --upgrade unstructured langchain "unstructured[all-docs]"
 pip install --upgrade chromadb langchain-text-splitters
 ```
+
+## Running the code:
+```bash
+export DOC="../../Documents/" # Export the path to the set of PDF files
+python main.py
+# If chroma_vdb exist do rm -rf ./chroma_vdb
+# Enter the question:
+# What is this about?
+```
+
+
