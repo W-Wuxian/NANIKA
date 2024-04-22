@@ -24,7 +24,7 @@ ollama list
 ## Activate langchain dependencies:
 
 ```bash
-conda create -f langchain_rag_env.yml
+conda env create -f langchain_rag_env.yml
 conda activate langchain_rag_env
 pip install "unstructured[all-docs]"
 pip install chromadb langchain-text-splitters
