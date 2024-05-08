@@ -49,7 +49,7 @@ So for example using *phi3* llm model, with *nomic-embed-text* as an embedding m
 ```bash
 python main.py -m phi3 -e nomic-embed-text -p /path/to/my/folder/
 ```
-In order to run several database  we need to specify the databse storing location via --vdb_path and the collection name via --collection_name, as follow:
+In order to run several database  we need to specify the database storing location via *-v* and the collection name via *-c*, as follow:
 ```bash
 python main.py -m phi3 -e nomic-embed-text -p /path/to/my/folder1/ -v ./database1 -c collection1
 python main.py -m phi3 -e nomic-embed-text -p /path/to/my/folder2/ -v ./database2 -c collection2
