@@ -15,37 +15,37 @@ from langchain.retrievers.multi_query import MultiQueryRetriever
 
 from langchain.chains import RetrievalQA
 
-PDF_ROOT_DIR    = ""
-PDF_FOLDER_PATH = ""
+PDF_ROOT_DIR    = "?"
+PDF_FOLDER_PATH = "?"
 VDB_PATH        = "./default_chroma_vdb"
 COLLECTION_NAME = "default_collection_name"
-MODEL_NAME      = ""
-EMBEDDING_NAME  = ""
-REUSE_VDB       = False
+MODEL_NAME      = "?"
+EMBEDDING_NAME  = "?"
+REUSE_VDB       = True
 
 argumentlist = sys.argv[1:]
 options = "hm:e:p:v:c:r:"
 long_options = ["help",
-                 "model_name",
-                 "embedding_name"
-                 "pdf_path",
-                 "vdb_path",
-                 "collection_name",
-                 "reuse"]
+                 "model_name =",
+                 "embedding_name =",
+                 "pdf_path =",
+                 "vdb_path =",
+                 "collection_name =",
+                 "reuse ="]
 
 try:
     arguments, values = getopt.getopt(argumentlist, options, long_options)
     for currentArgument, currentValue in arguments:
         print(currentArgument, " ", currentValue)
-        if currentArgument in ("-h", "--Help"):
+        if currentArgument in ("-h", "--help"):
             print ("Displaying Help:")
             print ("-h or --help to get this help msg")
-            print ("-m or --model_name name of the model used, ex:phi3")
-            print ("-e or --embedding_name name of the embedding model used, ex:nomic-embed-text")
-            print ("-p or --pdf_path path to datas to be used for RAG")
-            print ("-v or --vdb_path path to the directory used as a vector database")
-            print ("-c or --collection_name name of the vector database collection")
-            print ("-r or --reuse vdb_path")
+            print ("-m name of the model used, ex:phi3")
+            print ("-e name of the embedding model used, ex:nomic-embed-text")
+            print ("-p path to datas to be used for RAG")
+            print ("-v path to the directory used as a vector database")
+            print ("-c name of the vector database collection")
+            print ("-r str True or False reuse vector database")
             exit()
         elif currentArgument in ("-m", "--model_name"):
             MODEL_NAME = currentValue
@@ -62,7 +62,6 @@ try:
                 REUSE_VDB = True
             else:
                 REUSE_VDB = False
-    #exit()
 except getopt.error as err:
     print (str(err))
 
@@ -144,5 +143,5 @@ while True:
         print("End QA")
         break
     else:
-        result = qa_chain({"context" : vectordb.as_retriever(),"query": question})
-        print(result["result"])
+        response = qa_chain({"context" : vectordb.as_retriever(),"query": question})
+        print(response["result"])

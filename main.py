@@ -37,13 +37,13 @@ try:
         print(currentArgument, " ", currentValue)
         if currentArgument in ("-h", "--Help"):
             print ("Displaying Help:")
-            print ("-h or --help to get this help msg")
-            print ("-m or --model_name name of the model used, ex:phi3")
-            print ("-e or --embedding_name name of the embedding model used, ex:nomic-embed-text")
-            print ("-p or --pdf_path path to datas to be used for RAG")
-            print ("-v or --vdb_path path to the directory used as a vector database")
-            print ("-c or --collection_name name of the vector database collection")
-            print ("-r or --reuse vdb_path")
+            print ("-h to get this help msg")
+            print ("-m name of the model used, ex:phi3")
+            print ("-e name of the embedding model used, ex:nomic-embed-text")
+            print ("-p to datas to be used for RAG")
+            print ("-v path to the directory used as a vector database")
+            print ("-c name of the vector database collection")
+            print ("-r str True or False reuse vector database")
             exit()
         elif currentArgument in ("-m", "--model_name"):
             MODEL_NAME = currentValue
@@ -157,35 +157,15 @@ chain = (
     | llm
     | StrOutputParser()
 )
-print("*"*20)
-print("enter question")
-response = chain.invoke(input(""))
-print(response)
-print("#"*20)
-response = chain.invoke("How many types of nuclear reactions are there?")
-print(response)
 
-#query = "How many types of nuclear reactions are there?"
-#docs = vectordb.similarity_search(query, k=6)
-#for doc in docs:
-#    print(doc.page_content)
-#    print("#"*20)
-
-#vectordb.delete_collection()
-
-#loader = [UnstructuredPDFLoader( os.path.join(PDF_FOLDER_PATH, fn)) for fn in A]
-#print(len(loader))
-#data = loader[0].load()
-#print(data)
-#print(data[0].page_content)
-
-# Split and chunk 
-#data = loader.load()
-#text_splitter = RecursiveCharacterTextSplitter(chunk_size=7500, chunk_overlap=100)
-#chunks = text_splitter.split_documents(data)
-
-#index = VectorstoreIndexCreator().from_loaders(loader)
-#print(index)
-
-#index.query()
-#index.query_with_sources()
+question = ""
+while True:
+    print("*"*20)
+    print("Enter a QUESTION: (to exit enter q or quit)")
+    question = input("")
+    if question.casefold() == "q" or question.casefold() == "quit":
+        print("End QA")
+        break
+    else:
+        response = chain.invoke(question)
+        print(response)
