@@ -36,23 +36,29 @@ Once ollama and langchain stuff are done (see previous sections)
 you can use RAG. Here is two python scripts *main.py* and *reuse.py* to do so.
 ### Creating a database and QA loop
 The *main.py* script is used to create a database from your *PDF* documents as follow:
-```python
-python main.py --help --model_name --embedding_name --pdf_path --vdb_path --collection_name
+```bash
+python main.py --help
+options are:
+-m model name
+-e embedding name
+-p path to folder containing pdf files
+-v vector data base path
+-c collection name
 ```
 So for example using *phi3* llm model, with *nomic-embed-text* as an embedding model to create a database from my *PDF* documents at /path/to/my/folder/ one can use the following command:
-```python
-python main.py --model_name phi3 --embedding_name nomic-embed-text --pdf_path /path/to/my/folder/
+```bash
+python main.py -m phi3 -e nomic-embed-text -p /path/to/my/folder/
 ```
 In order to run several database  we need to specify the databse storing location via --vdb_path and the collection name via --collection_name, as follow:
-```python
-python main.py --model_name phi3 --embedding_name nomic-embed-text --pdf_path /path/to/my/folder/ --vdb_path ./database1 --collection_name collection1
-python main.py --model_name phi3 --embedding_name nomic-embed-text --pdf_path /path/to/my/folder/ --vdb_path ./database2 --collection_name collection2
+```bash
+python main.py -m phi3 -e nomic-embed-text -p /path/to/my/folder1/ -v ./database1 -c collection1
+python main.py -m phi3 -e nomic-embed-text -p /path/to/my/folder2/ -v ./database2 -c collection2
 ```
 The main.py script will also ask you to enter questions (RAG), to end this phase enter *q* or *quit*.
 
 ### Reusing a database and QA loop
-To reuse a database you need the corresponding --vdb_path and --collection_name and run the *reuse.py* script with *--reuse True* as follow:
-```python
-python reuse.py --model_name phi3 --embedding_name nomic-embed-text --pdf_path /path/to/my/folder/ --vdb_path ./database1 --collection_name collection1 --reuse True
-python reuse.py --model_name phi3 --embedding_name nomic-embed-text --pdf_path /path/to/my/folder/ --vdb_path ./database2 --collection_name collection2 --reuse True
+To reuse a database you need the corresponding *-v* and *-c* and run the *reuse.py* script with *-r True* as follow:
+```bash
+python reuse.py -m phi3 -e nomic-embed-text -v ./database1 -c collection1 -r True
+python reuse.py -m phi3 -e nomic-embed-text -v ./database2 -c collection2 -r True
 ```
