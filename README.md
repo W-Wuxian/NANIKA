@@ -3,7 +3,7 @@
 The branch focus the use of ollama and langchain to RAG from your *PDF* documents.
 ```bash
 cd $HOME
-git clone nanika -b ollama --single-branch git@github.com:W-Wuxian/NANIKA.git
+git clone -b ollama --single-branch git@github.com:W-Wuxian/NANIKA.git
 ```
 
 ## Install [ollama](https://github.com/ollama/ollama?tab=readme-ov-file)
