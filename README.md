@@ -37,11 +37,11 @@ pip install --upgrade tesseract
 
 ## Running the code:
 Once ollama and langchain stuff are done (see previous sections)
-you can use RAG. Here is two python scripts *main.py* and *reuse.py* to do so.
+you can use RAG. Here is two python scripts *nanika.py* to do so.
 ### Creating a database and QA loop
-The *main.py* script is used to create a database from your documents as follow:
+The *nanika.py* script is used to create a database from your documents as follow:
 ```bash
-python main.py --help
+python nanika.py --help
 options or long_options are:
 -m or --model_name model name
 -e or --embedding_name embedding name
@@ -53,20 +53,20 @@ options or long_options are:
 ```
 So for example using *phi3* llm model, with *nomic-embed-text* as an embedding model to create a database from my documents at /path/to/my/folder/ one can use the following command:
 ```bash
-python main.py -m phi3 -e nomic-embed-text -i "/path/to/my/folder1 /path/to/my/folder2 /path/to/my/file1"
+python nanika.py -m phi3 -e nomic-embed-text -i "/path/to/my/folder1 /path/to/my/folder2 /path/to/my/file1"
 ```
 In order to run several database  we need to specify the database storing location via *-v* and the collection name via *-c*, as follow:
 ```bash
-python main.py -m phi3 -e nomic-embed-text -i /path/to/my/folder1/ -v ./database1 -c collection1
-python main.py -m phi3 -e nomic-embed-text -i /path/to/my/folder2/ -v ./database2 -c collection2
+python nanika.py -m phi3 -e nomic-embed-text -i /path/to/my/folder1/ -v ./database1 -c collection1
+python nanika.py -m phi3 -e nomic-embed-text -i /path/to/my/folder2/ -v ./database2 -c collection2
 ```
-The main.py script will also ask you to enter questions (RAG), to end this phase enter *q* or *quit*.
+The nanika.py script will also ask you to enter questions (RAG), to end this phase enter *q* or *quit*.
 
 ### Reusing a database and QA loop
-To reuse a database you need the corresponding *-v* and *-c* and run the *main.py* script with *-r True* as follow:
+To reuse a database you need the corresponding *-v* and *-c* and run the *nanika.py* script with *-r True* as follow:
 ```bash
-python reuse.py -m phi3 -e nomic-embed-text -v ./database1 -c collection1 -r True
-python reuse.py -m phi3 -e nomic-embed-text -v ./database2 -c collection2 -r True
+python nanika.py -m phi3 -e nomic-embed-text -v ./database1 -c collection1 -r True
+python nanika.py -m phi3 -e nomic-embed-text -v ./database2 -c collection2 -r True
 ```
 
 ### File extension coverage
