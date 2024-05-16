@@ -3,7 +3,10 @@ import getopt, sys, os, shutil
 
 from langchain_community.document_loaders import (
     DirectoryLoader, UnstructuredPDFLoader, TextLoader,
-    PythonLoader, UnstructuredImageLoader
+    PythonLoader, UnstructuredImageLoader,
+    UnstructuredExcelLoader, UnstructuredWordDocumentLoader, UnstructuredXMLLoader,
+    UnstructuredCSVLoader, UnstructuredPowerPointLoader,
+    UnstructuredMarkdownLoader
 )
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -31,6 +34,12 @@ def routerloader(obj):
             loader = PythonLoader(obj)
         if Fname.endswith(".png") or Fname.endswith(".jpg"):
             loader = UnstructuredImageLoader(str(obj), mode="single", strategy="hi_res",
+            show_progress=True, use_multithreading=True)
+        if Fname.endswith(".xlsx") or Fname.endswith(".xls"):
+            loader = UnstructuredExcelLoader(str(obj), mode="single", strategy="hi_res",
+            show_progress=True, use_multithreading=True)
+        if Fname.endswith(".csv"):
+            loader = UnstructuredCSVLoader(str(obj), mode="single", strategy="hi_res",
             show_progress=True, use_multithreading=True)
         accumulator.extend(loader.load())
     elif os.path.isdir(obj):
@@ -65,6 +74,27 @@ def routerloader(obj):
             abc={'mode': "single", 'strategy': "hi_res"}
             loader = DirectoryLoader(
                 obj, glob="**/*.jpg", loader_cls=UnstructuredImageLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            accumulator.extend(loader.load())
+        if any(File.endswith(".xls") for File in os.listdir(obj)):
+            abc={'mode': "single", 'strategy': "hi_res"}
+            loader = DirectoryLoader(
+                obj, glob="**/*.xls", loader_cls=UnstructuredExcelLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            accumulator.extend(loader.load())
+        if any(File.endswith(".xlsx") for File in os.listdir(obj)):
+            abc={'mode': "single", 'strategy': "hi_res"}
+            loader = DirectoryLoader(
+                obj, glob="**/*.xlsx", loader_cls=UnstructuredExcelLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            accumulator.extend(loader.load())
+        if any(File.endswith(".csv") for File in os.listdir(obj)):
+            abc={'mode': "single", 'strategy': "hi_res"}
+            loader = DirectoryLoader(
+                obj, glob="**/*.csv", loader_cls=UnstructuredExcelLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
             accumulator.extend(loader.load())
@@ -185,8 +215,9 @@ splitted_data = None
 if REUSE_VDB is False:
     # Load datas
     documents = loaddata(PDF_FOLDER_PATH)
-    ##print("documents length::", len(documents))
-    ##print(documents[0].page_content[0:200])
+    print("documents length::", len(documents))
+    for i in range(len(documents)):
+        print(documents[i].page_content[0:300])
     # Split and chunk
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
