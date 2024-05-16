@@ -23,12 +23,16 @@ conda env create -f langchain_rag_env.yml
 conda activate langchain_rag_env
 pip install "unstructured[all-docs]"
 pip install chromadb langchain-text-splitters
+conda install conda-forge::pytesseract
+conda install conda-forge::tesseract
 ```
 ### Alternative using Python-venv
 ```bash
 python -m venv langchain_rag_venv
 pip install --upgrade unstructured langchain "unstructured[all-docs]"
 pip install --upgrade chromadb langchain-text-splitters
+pip install --upgrade pytesseract
+pip install --upgrade tesseract
 ```
 
 ## Running the code:
