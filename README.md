@@ -1,46 +1,83 @@
-# Testing [Mistral-src](https://github.com/mistralai/mistral-src/tree/main) 
-
-# Get Nanika repo
-See how to clone a project with Submodules at [Git-Tools-submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
+# Testing [langchain rag](https://github.com/tonykipkemboi/ollama_pdf_rag/blob/main/local_ollama_rag.ipynb)
+# Get branch ollama-rag from Nanika repo
+The branch focus the use of ollama and langchain to RAG from your documents. (see list of supported file extensions at the end)
 ```bash
 cd $HOME
-git clone nanika git@github.com:W-Wuxian/NANIKA.git
-git submodule init
-git submodule update
+git clone -b ollama-rag --single-branch git@github.com:W-Wuxian/NANIKA.git
 ```
-Or in One line:
+
+## Install [ollama](https://github.com/ollama/ollama?tab=readme-ov-file)
+After a successful installation run:
 ```bash
-git clone --recurse-submodules git@github.com:W-Wuxian/NANIKA.git
+ollama pull nomic-embed-text 
+ollama pull phi3
+ollama list
 ```
-## Activate Mistral dependencies:
-[pytorch-gpu info](https://pytorch.org/)
+*nomic-embed-text* is mandatory but *phi3* can be replaced with any model name at
+(ollama.com/library)[https://ollama.com/library]
+
+## Activate langchain dependencies:
+After installing ollama materials you need to do the following:
 ```bash
-conda activate nanika_env
+conda env create -f langchain_rag_env.yml
+conda activate langchain_rag_env
+pip install "unstructured[all-docs]"
+pip install chromadb langchain-text-splitters
 ```
 ### Alternative using Python-venv
 ```bash
-python -m venv nanika_venv
-pip install --upgrade fire sentencepiece torch>=2.1.0 xformers simple-parsing
-python -m main demo /path/to/mistral-7B-v0.1/
-# To give your own prompts
-python -m main interactive /path/to/mistral-7B-v0.1/
+python -m venv langchain_rag_venv
+pip install --upgrade unstructured langchain "unstructured[all-docs]"
+pip install --upgrade chromadb langchain-text-splitters
 ```
-## Download the model
-Warning the arxiv is 14G!
-```bash
-mkdir $HOME/MISTRAL_DWL_NANIKA && cd $HOME/MISTRAL_DWL_NANIKA
-wget https://files.mistral-7b-v0-1.mistral.ai/mistral-7B-v0.1.tar
-tar -xf mistral-7B-v0.1.tar
-```
-## run the model
-```bash
-cd $HOME/NANIKA/mistral-src
-python -m main demo $HOME/MISTRAL_DWL_NANIKA/mistral-7B-v0.1/
-# To give your own prompts
-python -m main interactive $HOME/MISTRAL_DWL_NANIKA/mistral-7B-v0.1/
-```
-And other things at [README Mistral-src](https://github.com/mistralai/mistral-src/tree/main)
 
-# TODO
-- [ ] Rerun the env file on my local machine
-- [ ] on mistral-hermes add more memory
+## Running the code:
+Once ollama and langchain stuff are done (see previous sections)
+you can use RAG. Here is two python scripts *main.py* and *reuse.py* to do so.
+### Creating a database and QA loop
+The *main.py* script is used to create a database from your documents as follow:
+```bash
+python main.py --help
+options or long_options are:
+-m or --model_name model name
+-e or --embedding_name embedding name
+-i or --inputdocs_path  path given between " " to folders or files to be used at RAG step
+-v or --vdb_path vector data base path
+-c or --collection_name collection name
+-r or --reuse reuse previous vdb and collection
+-d or --display-doc whether or not to display given documents
+```
+So for example using *phi3* llm model, with *nomic-embed-text* as an embedding model to create a database from my documents at /path/to/my/folder/ one can use the following command:
+```bash
+python main.py -m phi3 -e nomic-embed-text -i "/path/to/my/folder1 /path/to/my/folder2 /path/to/my/file1"
+```
+In order to run several database  we need to specify the database storing location via *-v* and the collection name via *-c*, as follow:
+```bash
+python main.py -m phi3 -e nomic-embed-text -i /path/to/my/folder1/ -v ./database1 -c collection1
+python main.py -m phi3 -e nomic-embed-text -i /path/to/my/folder2/ -v ./database2 -c collection2
+```
+The main.py script will also ask you to enter questions (RAG), to end this phase enter *q* or *quit*.
+
+### Reusing a database and QA loop
+To reuse a database you need the corresponding *-v* and *-c* and run the *main.py* script with *-r True* as follow:
+```bash
+python reuse.py -m phi3 -e nomic-embed-text -v ./database1 -c collection1 -r True
+python reuse.py -m phi3 -e nomic-embed-text -v ./database2 -c collection2 -r True
+```
+
+### File extension coverage
+
+| file extension | Coverage           |
+| -------------- | ------------------ |
+| pdf            | :heavy_check_mark: |
+| txt            | :heavy_check_mark: |
+| py             | :heavy_check_mark: |
+| png            | :heavy_check_mark: |
+| jpg            | :heavy_check_mark: |
+| xlsx           | :heavy_check_mark: |
+| xls            | :heavy_check_mark: |
+| odt            | :heavy_check_mark: |
+| csv            | :heavy_check_mark: |
+| pptx           | :heavy_check_mark: |
+| md             | :heavy_check_mark: |
+| org            | :heavy_check_mark: |
