@@ -30,6 +30,10 @@ def routerloader(obj):
             show_progress=True, use_multithreading=True)
         if Fname.endswith(".txt") or Fname.endswith(".py"):
             loader = TextLoader(obj, autodetect_encoding = True)
+        # BEGIN F90 C .h CPP As TextLoader
+        if Fname.endswith(".f90") or Fname.endswith(".c") or Fname.endswith(".h") or Fname.endswith(".cpp"):
+            loader = TextLoader(obj, autodetect_encoding = True)
+        # END F90 C .h CPP As TextLoader
         if Fname.endswith(".py"):
             loader = PythonLoader(obj)
         if Fname.endswith(".png") or Fname.endswith(".jpg"):
@@ -69,6 +73,36 @@ def routerloader(obj):
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
             accumulator.extend(loader.load())
+        # BEGIN F90 C .h CPP As TextLoader
+        if any(File.endswith(".f90") for File in os.listdir(obj)):
+            abc={'autodetect_encoding': True}
+            loader = DirectoryLoader(
+                obj, glob="**/*.f90", loader_cls=TextLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            accumulator.extend(loader.load())
+        if any(File.endswith(".c") for File in os.listdir(obj)):
+            abc={'autodetect_encoding': True}
+            loader = DirectoryLoader(
+                obj, glob="**/*.c", loader_cls=TextLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            accumulator.extend(loader.load())
+        if any(File.endswith(".h") for File in os.listdir(obj)):
+            abc={'autodetect_encoding': True}
+            loader = DirectoryLoader(
+                obj, glob="**/*.h", loader_cls=TextLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            accumulator.extend(loader.load())
+        if any(File.endswith(".cpp") for File in os.listdir(obj)):
+            abc={'autodetect_encoding': True}
+            loader = DirectoryLoader(
+                obj, glob="**/*.cpp", loader_cls=TextLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            accumulator.extend(loader.load())
+        # END F90 C .h CPP As TextLoader
         if any(File.endswith(".py") for File in os.listdir(obj)):
             loader = DirectoryLoader(
                 obj, glob="**/*.py", loader_cls=PythonLoader,
@@ -182,6 +216,12 @@ def initfromcmdlineargs():
                 print ("-i or --inputdocs_path path list between \" \" to folders or files to be used for RAG")
                 print ("-v or --vdb_path path to the directory used as a vector database")
                 print ("-c or --collection_name name of the vector database collection")
+                print ("Collection name Rules:")
+                print ("(1) contains 3-63 characters")
+                print ("(2) starts and ends with an alphanumeric character")
+                print ("(3) otherwise contains only alphanumeric characters, underscores or hyphens (-)")
+                print ("(4) contains no two consecutive periods (..) and")
+                print ("(5) is not a valid IPv4 address")
                 print ("-r or --reuse str True or False reuse vector database")
                 print("-d or --display_doc str Tur or False whether or not to display partially input documents")
                 print("Command line arguments example:")
