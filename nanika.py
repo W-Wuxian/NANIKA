@@ -1,6 +1,18 @@
 from pathlib import Path
 import getopt, sys, os, shutil
 
+from collections import Counter
+import torch
+import random
+import numpy as np
+
+from transformers import (
+    AutoTokenizer,
+    AutoModelForCausalLM,
+    AutoModelForSequenceClassification,
+    pipeline
+)
+
 from langchain_community.document_loaders import (
     DirectoryLoader, UnstructuredPDFLoader, TextLoader,
     PythonLoader, UnstructuredImageLoader,
@@ -8,17 +20,28 @@ from langchain_community.document_loaders import (
     UnstructuredCSVLoader, UnstructuredPowerPointLoader, UnstructuredODTLoader,
     UnstructuredMarkdownLoader
 )
-from langchain_community.embeddings import OllamaEmbeddings
+from langchain_community.embeddings import (
+    OllamaEmbeddings,
+    HuggingFaceEmbeddings
+)
+from langchain_community.llms import (
+    HuggingFacePipeline
+)
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 #from langchain.indexes import VectorstoreIndexCreator
 
-from langchain.prompts import ChatPromptTemplate, PromptTemplate
+from langchain.prompts import (ChatPromptTemplate,
+    PromptTemplate
+)
 from langchain_core.output_parsers import StrOutputParser
-from langchain_community.chat_models import ChatOllama
+from langchain_community.chat_models import (
+    ChatOllama
+)
 from langchain_core.runnables import RunnablePassthrough
 from langchain.retrievers.multi_query import MultiQueryRetriever
 
+os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 
 def routerloader(obj):
     loader = []
@@ -188,6 +211,7 @@ def remove_blankline(d):
 def initfromcmdlineargs():
     PDF_ROOT_DIR     = ""
     IDOC_PATH        = []
+    API_NAME         = "HFE"
     VDB_PATH         = "./default_chroma_vdb"
     COLLECTION_NAME  = "default_collection_name"
     MODEL_NAME       = ""
@@ -195,8 +219,9 @@ def initfromcmdlineargs():
     REUSE_VDB        = False
     DISPLAY_DOC      = False
     argumentlist = sys.argv[1:]
-    options = "hm:e:i:v:c:r:d:"
+    options = "ha:m:e:i:v:c:r:d:"
     long_options = ["help",
+                 "api_name=",
                  "model_name=",
                  "embedding_name=",
                  "inputdocs_path=",
@@ -211,6 +236,8 @@ def initfromcmdlineargs():
             if currentArgument in ("-h", "--help"):
                 print ("Displaying Help:")
                 print ("-h or --help to get this help msg")
+                print ("-a or --api_name name of the embedding API to be used:")
+                print ("OLE for OllamaEmbeddings or HFE for HuggingfaceEmbeddings")
                 print ("-m or --model_name name of the model used, ex:phi3")
                 print ("-e or --embedding_name name of the embedding model used, ex:nomic-embed-text")
                 print ("-i or --inputdocs_path path list between \" \" to folders or files to be used for RAG")
@@ -225,11 +252,13 @@ def initfromcmdlineargs():
                 print ("-r or --reuse str True or False reuse vector database")
                 print("-d or --display_doc str Tur or False whether or not to display partially input documents")
                 print("Command line arguments example:")
-                print("python --model_name MyModelName --embedding_name MyEmbeddingModel \ ")
+                print("python --api_name OLE --model_name MyModelName --embedding_name MyEmbeddingModel \ ")
                 print("--inputdocs_path \"My/Path/To/folder1 My/Path/To/folder2 My/Path/To/file1\" \ ")
                 print("--collection_name MyCollectionName \ ")
                 print("--reuse False --display-doc False")
                 exit()
+            elif currentArgument in ("-a", "--api_name"):
+                API_NAME = currentValue
             elif currentArgument in ("-m", "--model_name"):
                 MODEL_NAME = currentValue
             elif currentArgument in ("-e", "--embedding_name"):
@@ -253,7 +282,7 @@ def initfromcmdlineargs():
                     DISPLAY_DOC = True
                 else:
                     DISPLAY_DOC = False
-        return MODEL_NAME, EMBEDDING_NAME, IDOC_PATH, VDB_PATH, COLLECTION_NAME, REUSE_VDB, DISPLAY_DOC
+        return API_NAME, MODEL_NAME, EMBEDDING_NAME, IDOC_PATH, VDB_PATH, COLLECTION_NAME, REUSE_VDB, DISPLAY_DOC
     except getopt.error as err:
         print (str(err))
         exit()
@@ -292,7 +321,8 @@ def create_vdb(splitted_data, embedding, vdb_path, collection_name, reuse_vdb):
 print("#-----------------------------------#")
 print("#           INPUTS ARGS             #")
 print("#-----------------------------------#")
-MODEL_NAME, EMBEDDING_NAME, IDOC_PATH, VDB_PATH, COLLECTION_NAME, REUSE_VDB, DISPLAY_DOC = initfromcmdlineargs()
+API_NAME, MODEL_NAME, EMBEDDING_NAME, IDOC_PATH, VDB_PATH, COLLECTION_NAME, REUSE_VDB, DISPLAY_DOC = initfromcmdlineargs()
+print("API        NAME::", API_NAME)
 print("MODEL      NAME::", MODEL_NAME)
 print("EMBEDDING  NAME::", EMBEDDING_NAME)
 print("INPUT DOCS PATH::", IDOC_PATH)
@@ -303,7 +333,7 @@ print("DISPLAY    DOC ::", DISPLAY_DOC)
 print("#-----------------------------------#")
 print("#   STARTING DATA LOAD AND SPLIT    #")
 print("#-----------------------------------#")
-
+# https://github.com/FullStackRetrieval-com/RetrievalTutorials/blob/main/tutorials/LevelsOfTextSplitting/5_Levels_Of_Text_Splitting.ipynb
 splitted_data = None
 if REUSE_VDB is False:
     # Load datas
@@ -331,18 +361,39 @@ if REUSE_VDB is False:
         for i in range(len(splitted_data)):
             print("Printing splitted_data ", i, " :")
             print(splitted_data[i].page_content[0:300])
-    # Split and chunk
+
+print("#-----------------------------------#")
+print("#     STARTING EMBEDDINGS           #")
+print("#-----------------------------------#")
+api_embeddings = None
+if API_NAME == "OLE":
+    # Embedding Using Ollama
+    # https://api.python.langchain.com/en/latest/embeddings/langchain_community.embeddings.ollama.OllamaEmbeddings.html#langchain-community-embeddings-ollama-ollamaembeddings
+    ollama_embeddings = OllamaEmbeddings(
+        model=EMBEDDING_NAME,
+        show_progress=True
+    )
+    api_embeddings = ollama_embeddings
+elif API_NAME == "HFE":
+    #Embedding using HuggingFace
+    #microsoft/Phi-3-mini-4k-instruct
+    EMBEDDING_MODEL_NAME = "Snowflake/snowflake-arctic-embed-l"
+    #https://api.python.langchain.com/en/latest/embeddings/langchain_community.embeddings.huggingface.HuggingFaceEmbeddings.html
+    #https://sbert.net/docs/package_reference/SentenceTransformer.html#sentence_transformers.SentenceTransformer.encode
+    huggingface_embeddings = HuggingFaceEmbeddings(
+        model_name=str(EMBEDDING_NAME),
+        multi_process=False,
+        show_progress=True,
+        model_kwargs={"device": "cuda"},
+        encode_kwargs={"normalize_embeddings": True},  # Set `True` for cosine similarity
+    )
+    api_embeddings = huggingface_embeddings
 print("#-----------------------------------#")
 print("#     STARTING VECTOR DATABASE      #")
 print("#-----------------------------------#")
-# Embedding Using Ollama
-ollama_embeddings = OllamaEmbeddings(
-    model=EMBEDDING_NAME,
-    show_progress=True
-)
 # Add to vector database
 vectordb = create_vdb(splitted_data,
-                     ollama_embeddings,
+                     api_embeddings,
                      Path(VDB_PATH),
                      COLLECTION_NAME,
                      REUSE_VDB)
@@ -352,7 +403,21 @@ print("#     STARTING LLM AND PROMPT RAG   #")
 print("#-----------------------------------#")
 # LLM model
 local_model = MODEL_NAME
-llm = ChatOllama(model=local_model, temperature=0)
+if API_NAME == "OLE":
+    llm = ChatOllama(model=local_model, temperature=0)
+elif API_NAME == "HFE":
+    tokenizer = AutoTokenizer.from_pretrained(local_model, trust_remote_code=True)
+    model = AutoModelForCausalLM.from_pretrained(local_model, trust_remote_code=True)
+    hfpipe = pipeline(
+        task="text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        max_new_tokens=1024,
+        temperature=0,
+        do_sample=False,
+    )
+    llm = HuggingFacePipeline(pipeline=hfpipe)
+
 QUERY_PROMPT = PromptTemplate(
     input_variables=["question"],
     template="""You are an AI language model assistant. Your task is to generate four

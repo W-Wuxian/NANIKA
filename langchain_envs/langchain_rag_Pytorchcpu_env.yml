@@ -1,0 +1,25 @@
+name: langchain_rag_pytorchcpu_env
+channels:
+ - defaults
+ - conda-forge
+ - pytorch
+dependencies:
+ - python>=3.8
+ #- langchain-core
+ #- langchain-community
+ - langchain
+ #- langchain-text-splitters
+ - unstructured
+ - chromadb
+ - pytorch
+ - torchvision
+ - torchaudio
+ - cpuonly
+ - transformers
+ - sentence-transformers
+ - tqdm
+ - pytesseract
+ - tesseract
+# Moreover user has to run the following:
+# pip install "unstructured[all-docs]"
+# pip install langchain-text-splitters

@@ -1,0 +1,27 @@
+name: langchain_rag_pytorchcuda121gpu_env
+channels:
+ - defaults
+ - conda-forge
+ - nvidia
+ - pytorch
+dependencies:
+ - python>=3.8
+ #- langchain-core
+ #- langchain-community
+ - langchain
+ #- langchain-text-splitters
+ - unstructured
+ - chromadb
+ - transformers
+ - sentence-transformers
+ - tqdm
+ - pytesseract
+ - tesseract
+# Moreover user has to run the following:
+# pip install "unstructured[all-docs]"
+# pip install langchain-text-splitters
+# and one of the pytorch gpu or cpu cmd line:
+# pytorch gpu:
+# conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
+# or pytorch cpu:
+# conda install pytorch torchvision torchaudio cpuonly -c pytorch

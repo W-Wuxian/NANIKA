@@ -1,0 +1,26 @@
+name: langchain_rag_pytorchcuda121gpu_env
+channels:
+ - defaults
+ - conda-forge
+ - nvidia
+ - pytorch
+dependencies:
+ - python>=3.8
+ #- langchain-core
+ #- langchain-community
+ - langchain
+ #- langchain-text-splitters
+ - unstructured
+ - chromadb
+ - pytorch
+ - torchvision
+ - torchaudio
+ - pytorch-cuda=12.1
+ - transformers
+ - sentence-transformers
+ - tqdm
+ - pytesseract
+ - tesseract
+# Moreover user has to run the following:
+# pip install "unstructured[all-docs]"
+# pip install langchain-text-splitters

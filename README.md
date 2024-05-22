@@ -26,6 +26,7 @@ pip install chromadb langchain-text-splitters
 conda install conda-forge::pytesseract
 conda install conda-forge::tesseract
 ```
+If needed see at (pytorch)[https://pytorch.org/] install pytorch.
 ### Alternative using Python-venv
 ```bash
 python -m venv langchain_rag_venv
