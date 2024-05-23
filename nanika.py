@@ -25,7 +25,8 @@ from langchain_community.embeddings import (
     HuggingFaceEmbeddings
 )
 from langchain_community.llms import (
-    HuggingFacePipeline
+    HuggingFacePipeline,
+    #Ollama
 )
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
@@ -42,6 +43,23 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain.retrievers.multi_query import MultiQueryRetriever
 
 os.environ['TOKENIZERS_PARALLELISM'] = 'false'
+torchdevice = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+MAXNEWTOKENS = 524
+
+def rag_generation(query, tokenizer, model, vectordb, k=3, fetch_k=6, **gen_parameters):
+    """Generate text from a prompt after rag and print it."""
+    docs = vectordb.max_marginal_relevance_search(query, k, fetch_k)
+    retrieved_infos = " ".join([doc.page_content for doc in docs])
+    
+    text_input = f"With the following informations: {retrieved_infos}\nAnswer this question: {query}"
+
+    model_inp = tokenizer(text_input, return_tensors="pt").to(torchdevice)
+    input_nb_tokens = model_inp['input_ids'].shape[1]
+    print(torchdevice, input_nb_tokens)
+    out = model.generate(input_ids=model_inp["input_ids"], **gen_parameters)
+    #print(f"LLM input:\n{text_input}\n" + "#"*50)
+    #print(f"LLM output:\n{tokenizer.decode(out[0][input_nb_tokens:])}")
+    return tokenizer.decode(out[0][input_nb_tokens:])
 
 def routerloader(obj):
     loader = []
@@ -237,7 +255,7 @@ def initfromcmdlineargs():
                 print ("Displaying Help:")
                 print ("-h or --help to get this help msg")
                 print ("-a or --api_name name of the embedding API to be used:")
-                print ("OLE for OllamaEmbeddings or HFE for HuggingfaceEmbeddings")
+                print ("OLE for OllamaEmbeddings or HFE-PIP for HuggingfaceEmbeddings with pipeline")
                 print ("-m or --model_name name of the model used, ex:phi3")
                 print ("-e or --embedding_name name of the embedding model used, ex:nomic-embed-text")
                 print ("-i or --inputdocs_path path list between \" \" to folders or files to be used for RAG")
@@ -369,23 +387,21 @@ api_embeddings = None
 if API_NAME == "OLE":
     # Embedding Using Ollama
     # https://api.python.langchain.com/en/latest/embeddings/langchain_community.embeddings.ollama.OllamaEmbeddings.html#langchain-community-embeddings-ollama-ollamaembeddings
-    ollama_embeddings = OllamaEmbeddings(
-        model=EMBEDDING_NAME,
+    ollama_embeddings = OllamaEmbeddings(model=EMBEDDING_NAME,
         show_progress=True
-    )
+    )#base_url='http://192.168.2.16 OR 127.0.0.1 :11434' /api/embeddings
     api_embeddings = ollama_embeddings
-elif API_NAME == "HFE":
+elif API_NAME[0:3] == "HFE":
     #Embedding using HuggingFace
-    #microsoft/Phi-3-mini-4k-instruct
-    EMBEDDING_MODEL_NAME = "Snowflake/snowflake-arctic-embed-l"
+    #"Snowflake/snowflake-arctic-embed-l"
     #https://api.python.langchain.com/en/latest/embeddings/langchain_community.embeddings.huggingface.HuggingFaceEmbeddings.html
     #https://sbert.net/docs/package_reference/SentenceTransformer.html#sentence_transformers.SentenceTransformer.encode
     huggingface_embeddings = HuggingFaceEmbeddings(
         model_name=str(EMBEDDING_NAME),
         multi_process=False,
         show_progress=True,
-        model_kwargs={"device": "cuda"},
-        encode_kwargs={"normalize_embeddings": True},  # Set `True` for cosine similarity
+        model_kwargs={"device": torchdevice},
+        encode_kwargs={"normalize_embeddings": False},  # Set `True` for cosine similarity
     )
     api_embeddings = huggingface_embeddings
 print("#-----------------------------------#")
@@ -404,49 +420,61 @@ print("#-----------------------------------#")
 # LLM model
 local_model = MODEL_NAME
 if API_NAME == "OLE":
-    llm = ChatOllama(model=local_model, temperature=0)
-elif API_NAME == "HFE":
+    llm = ChatOllama(model=local_model,
+    num_ctx=MAXNEWTOKENS,
+    temperature=0
+)#base_url='http://192.168.2.16 OR 127.0.0.1 :11434' /api/chat
+elif API_NAME[0:3] == "HFE":
     tokenizer = AutoTokenizer.from_pretrained(local_model, trust_remote_code=True)
-    model = AutoModelForCausalLM.from_pretrained(local_model, trust_remote_code=True)
-    hfpipe = pipeline(
-        task="text-generation",
-        model=model,
-        tokenizer=tokenizer,
-        max_new_tokens=1024,
-        temperature=0,
-        do_sample=False,
-    )
-    llm = HuggingFacePipeline(pipeline=hfpipe)
+    model = AutoModelForCausalLM.from_pretrained(local_model,
+    device_map=torchdevice,
+    torch_dtype="auto", #torch.bfloat16 torch.int8 torch.uint8
+    trust_remote_code=True,
+    attn_implementation="flash_attention_2")#.to(torchdevice)
+    if API_NAME == "HFE-PIP":
+        hfpipe = pipeline(
+            task="text-generation",
+            model=model,
+            tokenizer=tokenizer,
+            #device=0,
+            device_map=torchdevice,
+            max_new_tokens=MAXNEWTOKENS,
+            temperature=0,
+            #do_sample=False,
+            )
+        llm = HuggingFacePipeline(pipeline=hfpipe)
 
 QUERY_PROMPT = PromptTemplate(
-    input_variables=["question"],
-    template="""You are an AI language model assistant. Your task is to generate four
-    different versions of the given user question to retrieve relevant documents from
-    a vector database. By generating multiple perspectives on the user question, your
-    goal is to help the user overcome some of the limitations of the distance-based
-    similarity search. Provide these alternative questions separated by newlines.
-    Original question: {question}""",
-)
-retriever = MultiQueryRetriever.from_llm(
-    vectordb.as_retriever(), 
-    llm,
-    prompt=QUERY_PROMPT
-)
-# RAG prompt
-template = """Answer the question based ONLY on the following context:
-{context}
-Question: {question}
-"""
-print("*"*20)
-prompt = ChatPromptTemplate.from_template(template)
-print("*"*20)
-chain = (
-    {"context": retriever, "question": RunnablePassthrough()}
-    | prompt
-    | llm
-    | StrOutputParser()
-)
-question = ""
+        input_variables=["question"],
+        template="""You are an AI language model assistant. Your task is to generate four
+        different versions of the given user question to retrieve relevant documents from
+        a vector database. By generating multiple perspectives on the user question, your
+        goal is to help the user overcome some of the limitations of the distance-based
+        similarity search. Provide these alternative questions separated by newlines.
+        Original question: {question}""",
+    )
+
+if API_NAME == "OLE" or API_NAME == "HFE-PIP":
+    retriever = MultiQueryRetriever.from_llm(
+        vectordb.as_retriever(), 
+        llm,
+        prompt=QUERY_PROMPT
+    )
+    # RAG prompt
+    template = """Answer the question based ONLY on the following context:
+    {context}
+    Question: {question}
+    """
+    print("*"*20)
+    prompt = ChatPromptTemplate.from_template(template)
+    print("*"*20)
+    chain = (
+        {"context": retriever, "question": RunnablePassthrough()}
+        | prompt
+        | llm
+        | StrOutputParser()
+    )
+
 print("#-----------------------------------#")
 print("#         STARTING  RAG Q&A         #")
 print("#-----------------------------------#")
@@ -459,5 +487,9 @@ while True:
         print("End QA")
         break
     else:
-        response = chain.invoke(question)
-        print(response)
+        if API_NAME == "OLE" or API_NAME == "HFE-PIP":
+            response = chain.invoke(question)
+            print(response)
+        elif API_NAME == "HFE-RGN":
+            response = rag_generation(question, tokenizer, model, vectordb, k=4, fetch_k=8, max_new_tokens=MAXNEWTOKENS)
+            print(response)
