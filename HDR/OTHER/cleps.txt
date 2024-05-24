@@ -1,0 +1,10 @@
+Launching jobs
+
+CLEPS uses Slurm, a job scheduling system for Linux clusters. You must use it to submit and control jobs. It acts a workload manager by allocating required resources at the right time to run your jobs. This page will provide you with information on job submission in both interactive and batch modes.
+
+Commands used to manage and interact with your jobs are located in the Job management section.
+Slurm terminology
+
+Depending on node configuration, a cpu can be either a core or a thread. On nodes where hyperthreading is activated (see CLEPS Compute nodes), a cpu is a thread. Otherwise it is a core.
+
+On CLEPS, the smallest allocatable consumable resource is a core, meaning that if you ask Slurm for a single cpu on a node with hyperthreading activated, you will get a whole core allocated but your task will run on a single thread on this core. This configuration ensures that no other user will use the other thread, limiting interferences with other users jobs.
