@@ -227,17 +227,19 @@ def remove_blankline(d):
     return d
 
 def initfromcmdlineargs():
-    PDF_ROOT_DIR     = ""
-    IDOC_PATH        = []
     API_NAME         = "HFE"
-    VDB_PATH         = "./default_chroma_vdb"
-    COLLECTION_NAME  = "default_collection_name"
     MODEL_NAME       = ""
     EMBEDDING_NAME   = ""
+    PDF_ROOT_DIR     = ""
+    IDOC_PATH        = []
+    VDB_PATH         = "./default_chroma_vdb"
+    COLLECTION_NAME  = "default_collection_name"
+    BASE_URL         = "local" # local i.e local serve, no base_url, elif BASE_URL[0:6]=="hermes",
+    #base_url='http://192.168.2.16:11434' elif BASE_URL[0:4]=="http", base_url=BASE_URL
     REUSE_VDB        = False
     DISPLAY_DOC      = False
     argumentlist = sys.argv[1:]
-    options = "ha:m:e:i:v:c:r:d:"
+    options = "ha:m:e:i:v:c:b:r:d:"
     long_options = ["help",
                  "api_name=",
                  "model_name=",
@@ -245,6 +247,7 @@ def initfromcmdlineargs():
                  "inputdocs_path=",
                  "vdb_path=",
                  "collection_name=",
+                 "base_url=",
                  "reuse=",
                  "display_doc="]
     try:
@@ -267,13 +270,14 @@ def initfromcmdlineargs():
                 print ("(3) otherwise contains only alphanumeric characters, underscores or hyphens (-)")
                 print ("(4) contains no two consecutive periods (..) and")
                 print ("(5) is not a valid IPv4 address")
+                print ("-b or --base_url Base url the model is hosted under")
                 print ("-r or --reuse str True or False reuse vector database")
-                print("-d or --display_doc str Tur or False whether or not to display partially input documents")
-                print("Command line arguments example:")
-                print("python --api_name OLE --model_name MyModelName --embedding_name MyEmbeddingModel \ ")
-                print("--inputdocs_path \"My/Path/To/folder1 My/Path/To/folder2 My/Path/To/file1\" \ ")
-                print("--collection_name MyCollectionName \ ")
-                print("--reuse False --display-doc False")
+                print ("-d or --display_doc str Tur or False whether or not to display partially input documents")
+                print ("Command line arguments example:")
+                print ("python --api_name OLE --model_name MyModelName --embedding_name MyEmbeddingModel \ ")
+                print ("--inputdocs_path \"My/Path/To/folder1 My/Path/To/folder2 My/Path/To/file1\" \ ")
+                print ("--collection_name MyCollectionName \ ")
+                print ("--reuse False --display-doc False")
                 exit()
             elif currentArgument in ("-a", "--api_name"):
                 API_NAME = currentValue
@@ -290,6 +294,8 @@ def initfromcmdlineargs():
                 VDB_PATH = Path(currentValue)
             elif currentArgument in ("-c", "--collection_name"):
                 COLLECTION_NAME = currentValue
+            elif currentArgument in ("-b", "--base_url"):
+                BASE_URL = currentValue
             elif currentArgument in ("-r", "--reuse"):
                 if currentValue.casefold() == "true":
                     REUSE_VDB = True
@@ -300,7 +306,7 @@ def initfromcmdlineargs():
                     DISPLAY_DOC = True
                 else:
                     DISPLAY_DOC = False
-        return API_NAME, MODEL_NAME, EMBEDDING_NAME, IDOC_PATH, VDB_PATH, COLLECTION_NAME, REUSE_VDB, DISPLAY_DOC
+        return API_NAME, MODEL_NAME, EMBEDDING_NAME, IDOC_PATH, VDB_PATH, COLLECTION_NAME, BASE_URL, REUSE_VDB, DISPLAY_DOC
     except getopt.error as err:
         print (str(err))
         exit()
@@ -339,13 +345,14 @@ def create_vdb(splitted_data, embedding, vdb_path, collection_name, reuse_vdb):
 print("#-----------------------------------#")
 print("#           INPUTS ARGS             #")
 print("#-----------------------------------#")
-API_NAME, MODEL_NAME, EMBEDDING_NAME, IDOC_PATH, VDB_PATH, COLLECTION_NAME, REUSE_VDB, DISPLAY_DOC = initfromcmdlineargs()
+API_NAME, MODEL_NAME, EMBEDDING_NAME, IDOC_PATH, VDB_PATH, COLLECTION_NAME, BASE_URL, REUSE_VDB, DISPLAY_DOC = initfromcmdlineargs()
 print("API        NAME::", API_NAME)
 print("MODEL      NAME::", MODEL_NAME)
 print("EMBEDDING  NAME::", EMBEDDING_NAME)
 print("INPUT DOCS PATH::", IDOC_PATH)
 print("VDB        PATH::", VDB_PATH)
 print("COLLECTION NAME::", COLLECTION_NAME)
+print("BASE       URL ::", BASE_URL)
 print("REUSE      VDB ::", REUSE_VDB)
 print("DISPLAY    DOC ::", DISPLAY_DOC)
 print("#-----------------------------------#")
@@ -387,9 +394,23 @@ api_embeddings = None
 if API_NAME == "OLE":
     # Embedding Using Ollama
     # https://api.python.langchain.com/en/latest/embeddings/langchain_community.embeddings.ollama.OllamaEmbeddings.html#langchain-community-embeddings-ollama-ollamaembeddings
-    ollama_embeddings = OllamaEmbeddings(model=EMBEDDING_NAME,
-        show_progress=True
-    )#base_url='http://192.168.2.16 OR 127.0.0.1 :11434' /api/embeddings
+    if BASE_URL == "local":
+        ollama_embeddings = OllamaEmbeddings(
+            model=EMBEDDING_NAME,
+            show_progress=True
+        )
+    elif BASE_URL == "hermes":
+        ollama_embeddings = OllamaEmbeddings(
+            base_url='http://192.168.2.16:11434',#base_url='http://192.168.2.16 OR 127.0.0.1 :11434' /api/embeddings
+            model=EMBEDDING_NAME,
+            show_progress=True
+        )
+    elif BASE_URL[0:4] == "http":
+        ollama_embeddings = OllamaEmbeddings(
+            base_url=BASE_URL,
+            model=EMBEDDING_NAME,
+            show_progress=True
+        )
     api_embeddings = ollama_embeddings
 elif API_NAME[0:3] == "HFE":
     #Embedding using HuggingFace
@@ -420,10 +441,26 @@ print("#-----------------------------------#")
 # LLM model
 local_model = MODEL_NAME
 if API_NAME == "OLE":
-    llm = ChatOllama(model=local_model,
-    num_ctx=MAXNEWTOKENS,
-    temperature=0
-)#base_url='http://192.168.2.16 OR 127.0.0.1 :11434' /api/chat
+    if BASE_URL == "local":
+        llm = ChatOllama(
+            model=local_model,
+            num_ctx=MAXNEWTOKENS,
+            temperature=0
+        )
+    elif BASE_URL == "hermes":
+        llm = ChatOllama(
+            base_url='http://192.168.2.16:11434',#base_url='http://192.168.2.16 OR 127.0.0.1 :11434' /api/chat
+            model=local_model,
+            num_ctx=MAXNEWTOKENS,
+            temperature=0
+        )
+    elif BASE_URL[0:4] == "http":
+        llm = ChatOllama(
+            base_url=BASE_URL,
+            model=local_model,
+            num_ctx=MAXNEWTOKENS,
+            temperature=0
+        )
 elif API_NAME[0:3] == "HFE":
     tokenizer = AutoTokenizer.from_pretrained(local_model, trust_remote_code=True)
     model = AutoModelForCausalLM.from_pretrained(local_model,
