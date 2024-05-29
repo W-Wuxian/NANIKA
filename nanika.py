@@ -363,6 +363,7 @@ splitted_data = None
 if REUSE_VDB is False:
     # Load datas
     documents = loaddata(IDOC_PATH)
+    print("Type of documents::", type(documents))
     print("documents length::", len(documents))
     if DISPLAY_DOC is True:
         for i in range(len(documents)):
@@ -382,6 +383,7 @@ if REUSE_VDB is False:
         "\u200b","\uff0c","\u3001","\uff0e","\u3002",]
         )
     splitted_data = splitter.split_documents(documents)
+    print("Type of splitted_data::", type(splitted_data))
     if DISPLAY_DOC is True:
         for i in range(len(splitted_data)):
             print("Printing splitted_data ", i, " :")
