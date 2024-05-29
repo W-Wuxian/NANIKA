@@ -28,7 +28,11 @@ from langchain_community.llms import (
     HuggingFacePipeline,
     #Ollama
 )
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import (
+    Language,
+    RecursiveCharacterTextSplitter
+)
+from langchain_experimental.text_splitter import SemanticChunker
 from langchain_community.vectorstores import Chroma
 #from langchain.indexes import VectorstoreIndexCreator
 
@@ -61,59 +65,106 @@ def rag_generation(query, tokenizer, model, vectordb, k=3, fetch_k=6, **gen_para
     #print(f"LLM output:\n{tokenizer.decode(out[0][input_nb_tokens:])}")
     return tokenizer.decode(out[0][input_nb_tokens:])
 
-def routerloader(obj):
-    loader = []
-    accumulator = []
+def keychecker(key, keys):
+    if key not in keys:
+        keys.append(key)
+
+def routerloader(obj, buf, keys):
+    #loader = []
+    #accumulator = []
     if os.path.isfile(obj):
         Fname = os.path.basename(obj)
-        if Fname.endswith(".pdf"):
+        if Fname.endswith(".txt") or Fname.endswith(".dat"):
+            loader = TextLoader(obj, autodetect_encoding = True)
+            buf["txt"].extend(loader.load())
+            keychecker("txt", keys)
+        elif Fname.endswith(".pdf"):
             loader = UnstructuredPDFLoader(str(obj), mode="single", strategy="hi_res",
             show_progress=True, use_multithreading=True)
-        if Fname.endswith(".txt") or Fname.endswith(".py"):
-            loader = TextLoader(obj, autodetect_encoding = True)
+            buf["pdf"].extend(loader.load())
+            keychecker("pdf", keys)
         # BEGIN F90 C .h CPP As TextLoader
-        if Fname.endswith(".f90") or Fname.endswith(".c") or Fname.endswith(".h") or Fname.endswith(".cpp"):
+        elif Fname.endswith(".f90") or Fname.endswith(".F90") or Fname.endswith(".f77") or Fname.endswith(".f95") or Fname.endswith(".F95") or Fname.endswith(".f03") or Fname.endswith(".F03") or Fname.endswith(".f08") or Fname.endswith(".F08") :
             loader = TextLoader(obj, autodetect_encoding = True)
+            buf["f90"].extend(loader.load())
+            keychecker(f90, keys)
+        elif Fname.endswith(".c") or Fname.endswith(".h") or Fname.endswith(".cu"):
+            loader = TextLoader(obj, autodetect_encoding = True)
+            buf["c"].extend(loader.load())
+            keychecker("c", keys)
+        elif Fname.endswith(".cpp") or Fname.endswith(".cxx") or Fname.endswith(".cc") or Fname.endswith(".c++") or Fname.endswith(".hpp"):
+            loader = TextLoader(obj, autodetect_encoding = True)
+            buf["cpp"].extend(loader.load())
+            keychecker("cpp", keys)
         # END F90 C .h CPP As TextLoader
-        if Fname.endswith(".py"):
+        elif Fname.endswith(".py"):
             loader = PythonLoader(obj)
-        if Fname.endswith(".png") or Fname.endswith(".jpg"):
+            buf["py"].extend(loader.load())
+            keychecker("py", keys)
+        elif Fname.endswith(".png") or Fname.endswith(".jpg"):
             loader = UnstructuredImageLoader(str(obj), mode="single", strategy="hi_res",
             show_progress=True, use_multithreading=True)
-        if Fname.endswith(".xlsx") or Fname.endswith(".xls"):
+            buf["png"].extend(loader.load())
+            keychecker("png", keys)
+        elif Fname.endswith(".xlsx") or Fname.endswith(".xls"):
             loader = UnstructuredExcelLoader(str(obj), mode="single", strategy="hi_res",
             show_progress=True, use_multithreading=True)
-        if Fname.endswith(".odt"):
+            buf["xlxs"].extend(loader.load())
+            keychecker("xlsx", keys)
+        elif Fname.endswith(".odt"):
             loader = UnstructuredODTLoader(str(obj), mode="single", strategy="hi_res",
             show_progress=True, use_multithreading=True)
-        if Fname.endswith(".csv"):
+            buf["odt"].extend(loader.load())
+            keychecker("odt", keys)
+        elif Fname.endswith(".csv"):
             loader = UnstructuredCSVLoader(str(obj), mode="single", strategy="hi_res",
             show_progress=True, use_multithreading=True)
-        if Fname.endswith(".pptx"):
+            buf["csv"].extend(loader.load())
+            keychecker("csv", keys)
+        elif Fname.endswith(".pptx"):
             loader = UnstructuredPowerPointLoader(str(obj), mode="single", strategy="hi_res",
             show_progress=True, use_multithreading=True)
-        if Fname.endswith(".md"):
+            buf["pptx"].extend(loader.load())
+            keychecker("pptx", keys)
+        elif Fname.endswith(".md"):
             loader = UnstructuredMarkdownLoader(str(obj), mode="single", strategy="hi_res",
             show_progress=True, use_multithreading=True)
-        if Fname.endswith(".org"):
+            buf["md"].extend(loader.load())
+            keychecker("md", keys)
+        elif Fname.endswith(".org"):
             loader = UnstructuredOrgModeLoader(str(obj), mode="single", strategy="hi_res",
             show_progress=True, use_multithreading=True)
-        accumulator.extend(loader.load())
+            buf["org"].extend(loader.load())
+            keychecker("org", keys)
+        #accumulator.extend(loader.load())
     elif os.path.isdir(obj):
-        if any(File.endswith(".pdf") for File in os.listdir(obj)):
-            abc={'mode': "single", 'strategy': "hi_res"}
-            loader = DirectoryLoader(
-                obj, glob="**/*.pdf", loader_cls=UnstructuredPDFLoader,
-                loader_kwargs=abc, show_progress=True, use_multithreading=True
-            )
-            accumulator.extend(loader.load())
         if any(File.endswith(".txt") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
             loader = DirectoryLoader(
                 obj, glob="**/*.txt", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            accumulator.extend(loader.load())
+            #accumulator.extend(loader.load())
+            buf["txt"].extend(loader.load())
+            keychecker("txt", keys)
+        if any(File.endswith(".dat") for File in os.listdir(obj)):
+            abc={'autodetect_encoding': True}
+            loader = DirectoryLoader(
+                obj, glob="**/*.dat", loader_cls=TextLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            #accumulator.extend(loader.load())
+            buf["txt"].extend(loader.load())
+            keychecker("txt", keys)
+        if any(File.endswith(".pdf") for File in os.listdir(obj)):
+            abc={'mode': "single", 'strategy': "hi_res"}
+            loader = DirectoryLoader(
+                obj, glob="**/*.pdf", loader_cls=UnstructuredPDFLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            #accumulator.extend(loader.load())
+            buf["pdf"].extend(loader.load())
+            keychecker("txt", keys)
         # BEGIN F90 C .h CPP As TextLoader
         if any(File.endswith(".f90") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
@@ -121,105 +172,295 @@ def routerloader(obj):
                 obj, glob="**/*.f90", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            accumulator.extend(loader.load())
+            #accumulator.extend(loader.load())
+            buf["f90"].extend(loader.load())
+            keychecker("f90", keys)
+        if any(File.endswith(".F90") for File in os.listdir(obj)):
+            abc={'autodetect_encoding': True}
+            loader = DirectoryLoader(
+                obj, glob="**/*.F90", loader_cls=TextLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            #accumulator.extend(loader.load())
+            buf["f90"].extend(loader.load())
+            keychecker("f90", keys)
+        if any(File.endswith(".f95") for File in os.listdir(obj)):
+            abc={'autodetect_encoding': True}
+            loader = DirectoryLoader(
+                obj, glob="**/*.f95", loader_cls=TextLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            #accumulator.extend(loader.load())
+            buf["f90"].extend(loader.load())
+            keychecker("f90", keys)
+        if any(File.endswith(".F95") for File in os.listdir(obj)):
+            abc={'autodetect_encoding': True}
+            loader = DirectoryLoader(
+                obj, glob="**/*.F95", loader_cls=TextLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            #accumulator.extend(loader.load())
+            buf["f90"].extend(loader.load())
+            keychecker("f90", keys)
+        if any(File.endswith(".f03") for File in os.listdir(obj)):
+            abc={'autodetect_encoding': True}
+            loader = DirectoryLoader(
+                obj, glob="**/*.f03", loader_cls=TextLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            #accumulator.extend(loader.load())
+            buf["f90"].extend(loader.load())
+            keychecker("f90", keys)
+        if any(File.endswith(".F03") for File in os.listdir(obj)):
+            abc={'autodetect_encoding': True}
+            loader = DirectoryLoader(
+                obj, glob="**/*.F03", loader_cls=TextLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            #accumulator.extend(loader.load())
+            buf["f90"].extend(loader.load())
+            keychecker("f90", keys)
+        if any(File.endswith(".f08") for File in os.listdir(obj)):
+            abc={'autodetect_encoding': True}
+            loader = DirectoryLoader(
+                obj, glob="**/*.f08", loader_cls=TextLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            #accumulator.extend(loader.load())
+            buf["f90"].extend(loader.load())
+            keychecker("f90", keys)
+        if any(File.endswith(".F08") for File in os.listdir(obj)):
+            abc={'autodetect_encoding': True}
+            loader = DirectoryLoader(
+                obj, glob="**/*.F08", loader_cls=TextLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            #accumulator.extend(loader.load())
+            buf["f90"].extend(loader.load())
+            keychecker("f90", keys)
         if any(File.endswith(".c") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
             loader = DirectoryLoader(
                 obj, glob="**/*.c", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            accumulator.extend(loader.load())
+            #accumulator.extend(loader.load())
+            buf["c"].extend(loader.load())
+            keychecker("c", keys)
+        if any(File.endswith(".cu") for File in os.listdir(obj)):
+            abc={'autodetect_encoding': True}
+            loader = DirectoryLoader(
+                obj, glob="**/*.cu", loader_cls=TextLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            #accumulator.extend(loader.load())
+            buf["c"].extend(loader.load())
+            keychecker("c", keys)
         if any(File.endswith(".h") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
             loader = DirectoryLoader(
                 obj, glob="**/*.h", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            accumulator.extend(loader.load())
+            #accumulator.extend(loader.load())
+            buf["c"].extend(loader.load())
+            keychecker("c", keys)
         if any(File.endswith(".cpp") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
             loader = DirectoryLoader(
                 obj, glob="**/*.cpp", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            accumulator.extend(loader.load())
+            #accumulator.extend(loader.load())
+            buf["cpp"].extend(loader.load())
+            keychecker("cpp", keys)
+        if any(File.endswith(".cc") for File in os.listdir(obj)):
+            abc={'autodetect_encoding': True}
+            loader = DirectoryLoader(
+                obj, glob="**/*.cc", loader_cls=TextLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            #accumulator.extend(loader.load())
+            buf["cpp"].extend(loader.load())
+            keychecker("cpp", keys)
+        if any(File.endswith(".cxx") for File in os.listdir(obj)):
+            abc={'autodetect_encoding': True}
+            loader = DirectoryLoader(
+                obj, glob="**/*.cxx", loader_cls=TextLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            #accumulator.extend(loader.load())
+            buf["cpp"].extend(loader.load())
+            keychecker("cpp", keys)
+        if any(File.endswith(".hpp") for File in os.listdir(obj)):
+            abc={'autodetect_encoding': True}
+            loader = DirectoryLoader(
+                obj, glob="**/*.hpp", loader_cls=TextLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            #accumulator.extend(loader.load())
+            buf["cpp"].extend(loader.load())
+            keychecker("cpp", keys)
         # END F90 C .h CPP As TextLoader
         if any(File.endswith(".py") for File in os.listdir(obj)):
             loader = DirectoryLoader(
                 obj, glob="**/*.py", loader_cls=PythonLoader,
                 show_progress=True, use_multithreading=True
             )
-            accumulator.extend(loader.load())
+            #accumulator.extend(loader.load())
+            buf["py"].extend(loader.load())
+            keychecker("py", keys)
         if any(File.endswith(".png") for File in os.listdir(obj)):
             abc={'mode': "single", 'strategy': "hi_res"}
             loader = DirectoryLoader(
                 obj, glob="**/*.png", loader_cls=UnstructuredImageLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            accumulator.extend(loader.load())
+            #accumulator.extend(loader.load())
+            buf["png"].extend(loader.load())
+            keychecker("png", keys)
         if any(File.endswith(".jpg") for File in os.listdir(obj)):
             abc={'mode': "single", 'strategy': "hi_res"}
             loader = DirectoryLoader(
                 obj, glob="**/*.jpg", loader_cls=UnstructuredImageLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            accumulator.extend(loader.load())
-        if any(File.endswith(".xls") for File in os.listdir(obj)):
-            abc={'mode': "single", 'strategy': "hi_res"}
-            loader = DirectoryLoader(
-                obj, glob="**/*.xls", loader_cls=UnstructuredExcelLoader,
-                loader_kwargs=abc, show_progress=True, use_multithreading=True
-            )
-            accumulator.extend(loader.load())
+            #accumulator.extend(loader.load())
+            buf["png"].extend(loader.load())
+            keychecker("png", keys)
         if any(File.endswith(".xlsx") for File in os.listdir(obj)):
             abc={'mode': "single", 'strategy': "hi_res"}
             loader = DirectoryLoader(
                 obj, glob="**/*.xlsx", loader_cls=UnstructuredExcelLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            accumulator.extend(loader.load())
+            #accumulator.extend(loader.load())
+            buf["xlxs"].extend(loader.load())
+            keychecker("xlsx", keys)
+        if any(File.endswith(".xls") for File in os.listdir(obj)):
+            abc={'mode': "single", 'strategy': "hi_res"}
+            loader = DirectoryLoader(
+                obj, glob="**/*.xls", loader_cls=UnstructuredExcelLoader,
+                loader_kwargs=abc, show_progress=True, use_multithreading=True
+            )
+            #ccumulator.extend(loader.load())
+            buf["xlxs"].extend(loader.load())
+            keychecker("xlsx", keys)
         if any(File.endswith(".odt") for File in os.listdir(obj)):
             abc={'mode': "single", 'strategy': "hi_res"}
             loader = DirectoryLoader(
                 obj, glob="**/*.odt", loader_cls=UnstructuredODTLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            accumulator.extend(loader.load())
+            #accumulator.extend(loader.load())
+            buf["odt"].extend(loader.load())
+            keychecker("odt", keys)
         if any(File.endswith(".csv") for File in os.listdir(obj)):
             abc={'mode': "single", 'strategy': "hi_res"}
             loader = DirectoryLoader(
                 obj, glob="**/*.csv", loader_cls=UnstructuredCSVLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            accumulator.extend(loader.load())
+            #accumulator.extend(loader.load())
+            buf["csv"].extend(loader.load())
+            keychecker("odt", keys)
         if any(File.endswith(".pptx") for File in os.listdir(obj)):
             abc={'mode': "single", 'strategy': "hi_res"}
             loader = DirectoryLoader(
                 obj, glob="**/*.pptx", loader_cls=UnstructuredPowerPointLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            accumulator.extend(loader.load())
+            #accumulator.extend(loader.load())
+            buf["pptx"].extend(loader.load())
+            keychecker("pptx", keys)
         if any(File.endswith(".md") for File in os.listdir(obj)):
             abc={'mode': "single", 'strategy': "hi_res"}
             loader = DirectoryLoader(
                 obj, glob="**/*.md", loader_cls=UnstructuredMarkdownLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            accumulator.extend(loader.load())
+            #accumulator.extend(loader.load())
+            buf["md"].extend(loader.load())
+            keychecker("md", keys)
         if any(File.endswith(".org") for File in os.listdir(obj)):
             abc={'mode': "single", 'strategy': "hi_res"}
             loader = DirectoryLoader(
                 obj, glob="**/*.org", loader_cls=UnstructuredOrgModeLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            accumulator.extend(loader.load())
-    return accumulator
+            #accumulator.extend(loader.load())
+            buf["org"].extend(loader.load())
+            keychecker("org", keys)
+    return buf, keys #accumulator
 
-def loaddata(data_path):
+def specificsplitter(keys, **kwargs):
+    splitted_data = []
+    splitter_fun = {key: [] for key in keys}
+    embedding = kwargs.get("embedding", None)
+    for key in keys:
+        if key == "txt":
+            if embedding is None:
+                splitter_fun[key] = RecursiveCharacterTextSplitter(
+                    chunk_size=300,
+                    chunk_overlap=30,
+                    separators=["\n\n", "\n", r"(?<=[\.?!]\s+)",  " ", "",
+                    "\u200b","\uff0c","\u3001","\uff0e","\u3002",]
+                )
+            else:
+                #BREAKPOINT_DEFAULTS: Dict[BreakpointThresholdType, float] = {
+                #    "percentile": 95,
+                #    "standard_deviation": 3,
+                #    "interquartile": 1.5,
+                #}
+                splitter_fun[key] = SemanticChunker(
+                    embedding, breakpoint_threshold_type="percentile"
+                )
+        elif key == "py":
+            splitter_fun[key] = RecursiveCharacterTextSplitter.from_language(
+                language=Language.PYTHON, chunk_size=50, chunk_overlap=0
+            )
+        elif key == "c" or key == "h" or key == "cuh" or key == "cu":
+            splitter_fun[key] = RecursiveCharacterTextSplitter.from_language(
+                language=Language.C, chunk_size=50, chunk_overlap=0
+            )
+        elif key == "cpp" or key == "cc" or key == "c++" or key == "cxx" or key == "hpp":
+            splitter_fun[key] = RecursiveCharacterTextSplitter.from_language(
+                language=Language.CPP, chunk_size=50, chunk_overlap=0
+            )
+        elif key == "f90" or key == "F90" or key == "f77" or key == "f08":
+            splitter_fun[key] = RecursiveCharacterTextSplitter(
+                chunk_size=50,
+                chunk_overlap=0,
+                separators=["\n\n", "\n",  " ", "",
+                "\u200b","\uff0c","\u3001","\uff0e","\u3002",
+                "\nmodule", "\nModule", "\nMODULE",
+                "\nsubroutine", "\nSubroutine", "\nSUBROUTINE",
+                "\n\tsubroutine", "\n\tSubroutine", "\n\tSUBROUTINE",
+                "\nfunction","\nFunction","\nFUNCTION",
+                "\n\tfunction","\n\tFunction","\n\tFUNCTION"]#r"(?<=\. )"
+            )
+        #splitted_data = splitter.split_documents(loader.load())
+    return splitter_fun
+
+def loaddata(data_path, **kwargs):
+    default_keys = ["txt", "pdf", "f90", "c", "cpp", "py", "png", "xlsx", "odt", "csv", "pptx", "md", "org"]
+    buf = {key: [] for key in default_keys}
+    keys = []
     documents = []
+    embedding = kwargs.get("embedding", None)
     for data in data_path:
-        documents.extend(routerloader(data))
-    return documents
+        buf, keys = routerloader(data, buf, keys)
+    print (keys)
+    print (buf)
+    splitter_fun = specificsplitter(keys, embedding=embedding)
+    print (splitter_fun)
+    for key in keys:
+        print ("*"*20)
+        print (key)
+        buf[key] = splitter_fun[key].split_documents(buf[key])
+        print (buf[key])
+        print(len(buf[key]))
+    return buf, keys
 
 def remove_blankline(d):
     text = d.page_content.replace('\n\n','\n')
@@ -355,37 +596,6 @@ print("COLLECTION NAME::", COLLECTION_NAME)
 print("BASE       URL ::", BASE_URL)
 print("REUSE      VDB ::", REUSE_VDB)
 print("DISPLAY    DOC ::", DISPLAY_DOC)
-print("#-----------------------------------#")
-print("#   STARTING DATA LOAD AND SPLIT    #")
-print("#-----------------------------------#")
-# https://github.com/FullStackRetrieval-com/RetrievalTutorials/blob/main/tutorials/LevelsOfTextSplitting/5_Levels_Of_Text_Splitting.ipynb
-splitted_data = None
-if REUSE_VDB is False:
-    # Load datas
-    documents = loaddata(IDOC_PATH)
-    print("documents length::", len(documents))
-    if DISPLAY_DOC is True:
-        for i in range(len(documents)):
-            print("Printing document ", i, " :")
-            print(documents[i].page_content[0:300])
-    
-    documents = [remove_blankline(d) for d in documents]
-    if DISPLAY_DOC is True:
-        for i in range(len(documents)):
-            print("Printing document after remove_blankline() ", i, " :")
-            print(documents[i].page_content[0:300])
-    # Split and chunk
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=300,
-        chunk_overlap=30,
-        separators=["\n\n", "\n", r"(?<=\. )",  " ", "",
-        "\u200b","\uff0c","\u3001","\uff0e","\u3002",]
-        )
-    splitted_data = splitter.split_documents(documents)
-    if DISPLAY_DOC is True:
-        for i in range(len(splitted_data)):
-            print("Printing splitted_data ", i, " :")
-            print(splitted_data[i].page_content[0:300])
 
 print("#-----------------------------------#")
 print("#     STARTING EMBEDDINGS           #")
@@ -425,11 +635,56 @@ elif API_NAME[0:3] == "HFE":
         encode_kwargs={"normalize_embeddings": False},  # Set `True` for cosine similarity
     )
     api_embeddings = huggingface_embeddings
+
+print("#-----------------------------------#")
+print("#   STARTING DATA LOAD AND SPLIT    #")
+print("#-----------------------------------#")
+# https://github.com/FullStackRetrieval-com/RetrievalTutorials/blob/main/tutorials/LevelsOfTextSplitting/5_Levels_Of_Text_Splitting.ipynb
+splitted_data = None
+keys = None
+documents = []
+if REUSE_VDB is False:
+    # Load datas
+    splitted_data, keys = loaddata(IDOC_PATH)
+    print("documents length::", len(splitted_data))
+    print("documents length::", len(splitted_data["txt"]))
+    print("documents length::", len(splitted_data["py"]))
+    
+    if DISPLAY_DOC is True:
+        for k in keys:
+            print(splitted_data[k][0].page_content)#.page_content[0:300])
+    for k in keys:
+        #documents.append(splitted_data[k])
+        for l in range(len(splitted_data[k])):
+            documents.append(splitted_data[k][l])
+    print("$"*20)
+    print(len(documents))
+    print(documents)
+    if DISPLAY_DOC is True:
+        for i in range(len(documents)):
+            print("Printing document after remove_blankline() ", i, " :")
+            print(documents[i].page_content[0:300])
+    exit()
+    #print(len(documents[0]))
+    #print(documents[0][0])
+#    if DISPLAY_DOC is True:
+#        for i in range(len(documents)):
+#            print("Printing document ", i, " :")
+#            print(documents[i].page_content[0:300])
+    
+#    splitted_data = [remove_blankline(d) for d in splitted_data]
+#    if DISPLAY_DOC is True:
+#        for i in range(len(splitted_data)):
+#            print("Printing document after remove_blankline() ", i, " :")
+#            print(splitted_data[i].page_content[0:300])
+
+
 print("#-----------------------------------#")
 print("#     STARTING VECTOR DATABASE      #")
 print("#-----------------------------------#")
 # Add to vector database
-vectordb = create_vdb(splitted_data,
+
+vectordb = create_vdb(documents,
                      api_embeddings,
                      Path(VDB_PATH),
                      COLLECTION_NAME,
