@@ -417,15 +417,15 @@ def specificsplitter(keys, **kwargs):
                 )
         elif key == "py":
             splitter_fun[key] = RecursiveCharacterTextSplitter.from_language(
-                language=Language.PYTHON, chunk_size=50, chunk_overlap=0
+                language="python", chunk_size=50, chunk_overlap=0
             )
         elif key == "c" or key == "h" or key == "cuh" or key == "cu":
             splitter_fun[key] = RecursiveCharacterTextSplitter.from_language(
-                language=Language.C, chunk_size=50, chunk_overlap=0
+                language=Language.C, chunk_size=50, chunk_overlap=0#Language.C
             )
         elif key == "cpp" or key == "cc" or key == "c++" or key == "cxx" or key == "hpp":
             splitter_fun[key] = RecursiveCharacterTextSplitter.from_language(
-                language=Language.CPP, chunk_size=50, chunk_overlap=0
+                language=Language.CPP, chunk_size=300, chunk_overlap=0
             )
         elif key == "f90" or key == "F90" or key == "f77" or key == "f08":
             splitter_fun[key] = RecursiveCharacterTextSplitter(
