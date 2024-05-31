@@ -87,7 +87,7 @@ def routerloader(obj, buf, keys):
         elif Fname.endswith(".f90") or Fname.endswith(".F90") or Fname.endswith(".f77") or Fname.endswith(".f95") or Fname.endswith(".F95") or Fname.endswith(".f03") or Fname.endswith(".F03") or Fname.endswith(".f08") or Fname.endswith(".F08") :
             loader = TextLoader(obj, autodetect_encoding = True)
             buf["f90"].extend(loader.load())
-            keychecker(f90, keys)
+            keychecker("f90", keys)
         elif Fname.endswith(".c") or Fname.endswith(".h") or Fname.endswith(".cu"):
             loader = TextLoader(obj, autodetect_encoding = True)
             buf["c"].extend(loader.load())
@@ -645,10 +645,11 @@ keys = None
 documents = []
 if REUSE_VDB is False:
     # Load datas
-    splitted_data, keys = loaddata(IDOC_PATH)
-    print("documents length::", len(splitted_data))
-    print("documents length::", len(splitted_data["txt"]))
-    print("documents length::", len(splitted_data["py"]))
+    splitted_data, keys = loaddata(IDOC_PATH, embedding=api_embeddings)
+    print("splitted_data type::", type(splitted_data))
+    print("splitted_data length::", len(splitted_data))
+    print("splitted_data length::", len(splitted_data["txt"]))
+    print("splitted_data length::", len(splitted_data["py"]))
     
     if DISPLAY_DOC is True:
         for k in keys:
@@ -658,13 +659,14 @@ if REUSE_VDB is False:
         for l in range(len(splitted_data[k])):
             documents.append(splitted_data[k][l])
     print("$"*20)
+    print("documents type::", type(documents))
     print(len(documents))
     print(documents)
     if DISPLAY_DOC is True:
         for i in range(len(documents)):
             print("Printing document after remove_blankline() ", i, " :")
             print(documents[i].page_content[0:300])
-    exit()
+    #exit()
     #print(len(documents[0]))
     #print(documents[0][0])
 #    if DISPLAY_DOC is True:
