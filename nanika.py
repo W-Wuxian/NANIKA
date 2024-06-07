@@ -76,53 +76,40 @@ def routerloader(obj, buf, keys):
         Fname = os.path.basename(obj)
         if Fname.endswith(".txt") or Fname.endswith(".dat"):
             loader = TextLoader(obj, autodetect_encoding = True)
-            buf["txt"].extend(loader.load())
+            buf["txt"].extend( cleandocs(loader.load(), "txt")) #loader.load())
             keychecker("txt", keys)
         elif Fname.endswith(".pdf"):
             loader = UnstructuredPDFLoader(str(obj), mode="single", strategy="hi_res",
             show_progress=True, use_multithreading=True)
-            buf["pdf"].extend(loader.load())
+            buf["pdf"].extend( cleandocs(loader.load(), "pdf")) #loader.load())
             keychecker("pdf", keys)
         # BEGIN F90 C .h CPP As TextLoader
         elif Fname.endswith(".f90") or Fname.endswith(".F90") or Fname.endswith(".f77") or Fname.endswith(".f95") or Fname.endswith(".F95") or Fname.endswith(".f03") or Fname.endswith(".F03") or Fname.endswith(".f08") or Fname.endswith(".F08") :
             loader = TextLoader(obj, autodetect_encoding = True)
-            buf["f90"].extend(loader.load())
+            buf["f90"].extend( cleandocs(loader.load(), "f90")) #loader.load())
             keychecker("f90", keys)
         elif Fname.endswith(".c") or Fname.endswith(".h") or Fname.endswith(".cu"):
             loader = TextLoader(obj, autodetect_encoding = True)
-            print(type(loader))
-            print(type(loader.load()))
-            print(len(loader.load()))
-            print(loader.load()[0].page_content)
-            A = remove_code_comments(loader.load()[0].page_content, "c")
-            print(A)
-            #loader.load()[0].page_content.__setattr__(page_content,A)
-            #setattr(loader.load()[0], "page_content", A)
-            print(loader.load()[0].page_content)
-            print(loader.load()[0].metadata["source"])
-            print(type(loader.load()[0].page_content))
-            print(type(loader.load()[0].metadata))
-            print(dir(loader.load()[0]))
-            newdoc = Document(page_content=A, metadata={
-                "source": loader.load()[0].metadata["source"]
-            })
-            print("NEWDOC")
-            print(newdoc)
-            B = loader.load()[0]
-            B.page_content = A
-            print("BBBBB")
-            print(setattr(loader.load()[0],"page_content",B.page_content))
-            exit()
-            buf["c"].extend(loader.load())
+            # B =  loader.load()[0]
+            # B.page_content = remove_code_comments(loader.load()[0].page_content, "c")
+            # print("BBBBB")
+            # print(B)
+            # print("REMOVE BLANK")
+            # B = remove_blankline(B)
+            # print( B)
+            # print(buf)
+            # buf["c"].extend( B)#loader.load())
+            # print(buf)
+            buf["c"].extend( cleandocs(loader.load(), "c")) #loader.load())
             keychecker("c", keys)
         elif Fname.endswith(".cpp") or Fname.endswith(".cxx") or Fname.endswith(".cc") or Fname.endswith(".c++") or Fname.endswith(".hpp"):
             loader = TextLoader(obj, autodetect_encoding = True)
-            buf["cpp"].extend(loader.load())
+            buf["cpp"].extend( cleandocs(loader.load(), ".cpp")) #loader.load())
             keychecker("cpp", keys)
         # END F90 C .h CPP As TextLoader
         elif Fname.endswith(".py"):
             loader = PythonLoader(obj)
-            buf["py"].extend(loader.load())
+            buf["py"].extend( cleandocs(loader.load(), "py")) #loader.load())
             keychecker("py", keys)
         elif Fname.endswith(".png") or Fname.endswith(".jpg"):
             loader = UnstructuredImageLoader(str(obj), mode="single", strategy="hi_res",
@@ -166,7 +153,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.txt", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["txt"].extend(loader.load())
+            buf["txt"].extend( cleandocs(loader.load(), "txt")) #loader.load())
             keychecker("txt", keys)
         if any(File.endswith(".dat") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
@@ -174,7 +161,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.dat", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["txt"].extend(loader.load())
+            buf["txt"].extend( cleandocs(loader.load(), "dat")) #loader.load())
             keychecker("txt", keys)
         if any(File.endswith(".pdf") for File in os.listdir(obj)):
             abc={'mode': "single", 'strategy': "hi_res"}
@@ -182,7 +169,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.pdf", loader_cls=UnstructuredPDFLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["pdf"].extend(loader.load())
+            buf["pdf"].extend( cleandocs(loader.load(), "pdf")) #loader.load())
             keychecker("txt", keys)
         # BEGIN F90 C .h CPP As TextLoader
         if any(File.endswith(".f90") for File in os.listdir(obj)):
@@ -191,7 +178,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.f90", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["f90"].extend(loader.load())
+            buf["f90"].extend( cleandocs(loader.load(), "f90")) #loader.load())
             keychecker("f90", keys)
         if any(File.endswith(".F90") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
@@ -199,7 +186,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.F90", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["f90"].extend(loader.load())
+            buf["f90"].extend( cleandocs(loader.load(), "f90")) #loader.load())
             keychecker("f90", keys)
         if any(File.endswith(".f95") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
@@ -207,7 +194,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.f95", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["f90"].extend(loader.load())
+            buf["f90"].extend( cleandocs(loader.load(), "f90")) #loader.load())
             keychecker("f90", keys)
         if any(File.endswith(".F95") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
@@ -215,7 +202,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.F95", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["f90"].extend(loader.load())
+            buf["f90"].extend( cleandocs(loader.load(), "f90")) #loader.load())
             keychecker("f90", keys)
         if any(File.endswith(".f03") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
@@ -223,7 +210,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.f03", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["f90"].extend(loader.load())
+            buf["f90"].extend( cleandocs(loader.load(), "f90")) #loader.load())
             keychecker("f90", keys)
         if any(File.endswith(".F03") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
@@ -231,7 +218,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.F03", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["f90"].extend(loader.load())
+            buf["f90"].extend( cleandocs(loader.load(), "f90")) #loader.load())
             keychecker("f90", keys)
         if any(File.endswith(".f08") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
@@ -239,7 +226,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.f08", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["f90"].extend(loader.load())
+            buf["f90"].extend( cleandocs(loader.load(), "f90")) #loader.load())
             keychecker("f90", keys)
         if any(File.endswith(".F08") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
@@ -247,7 +234,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.F08", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["f90"].extend(loader.load())
+            buf["f90"].extend( cleandocs(loader.load(), "f90")) #loader.load())
             keychecker("f90", keys)
         if any(File.endswith(".c") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
@@ -255,7 +242,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.c", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["c"].extend(loader.load())
+            buf["c"].extend( cleandocs(loader.load(), "c")) #loader.load())
             keychecker("c", keys)
         if any(File.endswith(".cu") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
@@ -263,7 +250,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.cu", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["c"].extend(loader.load())
+            buf["c"].extend( cleandocs(loader.load(), "c")) #loader.load())
             keychecker("c", keys)
         if any(File.endswith(".h") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
@@ -271,7 +258,20 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.h", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["c"].extend(loader.load())
+            # print(type(loader.load()))
+            # print(len(loader.load()))
+            # print(loader.load())
+            # print(loader.load()[0])
+            # print(loader.load()[1])
+            # ldlen = len(loader.load())
+            # B =  loader.load()
+            # for i in range(ldlen):
+            #     B[i].page_content = remove_code_comments(loader.load()[i].page_content, "c")
+            #     B[i] = remove_blankline(B[i])
+            #B = cleandocs(loader.load(), "c")
+            #print(B)
+            #exit()
+            buf["c"].extend( cleandocs(loader.load(), "c")) #loader.load())
             keychecker("c", keys)
         if any(File.endswith(".cpp") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
@@ -279,7 +279,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.cpp", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["cpp"].extend(loader.load())
+            buf["cpp"].extend( cleandocs(loader.load(), "cpp")) #loader.load())
             keychecker("cpp", keys)
         if any(File.endswith(".cc") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
@@ -287,7 +287,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.cc", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["cpp"].extend(loader.load())
+            buf["cpp"].extend( cleandocs(loader.load(), "cpp")) #loader.load())
             keychecker("cpp", keys)
         if any(File.endswith(".cxx") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
@@ -295,7 +295,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.cxx", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["cpp"].extend(loader.load())
+            buf["cpp"].extend( cleandocs(loader.load(), "cpp")) #loader.load())
             keychecker("cpp", keys)
         if any(File.endswith(".hpp") for File in os.listdir(obj)):
             abc={'autodetect_encoding': True}
@@ -303,7 +303,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.hpp", loader_cls=TextLoader,
                 loader_kwargs=abc, show_progress=True, use_multithreading=True
             )
-            buf["cpp"].extend(loader.load())
+            buf["cpp"].extend( cleandocs(loader.load(), "cpp")) #loader.load())
             keychecker("cpp", keys)
         # END F90 C .h CPP As TextLoader
         if any(File.endswith(".py") for File in os.listdir(obj)):
@@ -311,7 +311,7 @@ def routerloader(obj, buf, keys):
                 obj, glob="**/*.py", loader_cls=PythonLoader,
                 show_progress=True, use_multithreading=True
             )
-            buf["py"].extend(loader.load())
+            buf["py"].extend( cleandocs(loader.load(), "py")) #loader.load())
             keychecker("py", keys)
         if any(File.endswith(".png") for File in os.listdir(obj)):
             abc={'mode': "single", 'strategy': "hi_res"}
@@ -385,7 +385,7 @@ def routerloader(obj, buf, keys):
             )
             buf["org"].extend(loader.load())
             keychecker("org", keys)
-    return buf, keys #accumulator
+    return buf, keys
 
 def specificsplitter(keys, **kwargs):
     splitted_data = []
@@ -475,9 +475,18 @@ def loaddata(data_path, **kwargs):
         print(len(buf[key]))
     return buf, keys
 
-def remove_blankline(d):
-    text = d.page_content.replace('\n\n','\n')
+def remove_blankline(d :list) -> list:
+    text = d.page_content.replace(' \n ','\n')
     d.page_content = text
+    text = d.page_content.replace(' \n','\n')
+    d.page_content = text
+    text = d.page_content.replace('\n ','\n')
+    d.page_content = text
+    for i in range(6,1,-1):
+        text = d.page_content.replace('\n'*i,'\n')
+        d.page_content = text
+    #text = d.page_content.replace('\n\n','\n')
+    #d.page_content = text
     return d
 
 def remove_code_comments(string :str, code :str) -> str:
@@ -499,6 +508,15 @@ def remove_code_comments(string :str, code :str) -> str:
         else: # otherwise, we will return the 1st group
             return match.group(1) # captured quoted-string
     return regex.sub(_replacer, string)
+
+def cleandocs(listdocs :list, ext :str) -> list:
+    B =  listdocs #loader.load()
+    ldlen = len(listdocs)
+    for i in range(ldlen):
+        if ext in ["f90", "c", "cpp", "py"]:
+            B[i].page_content = remove_code_comments(listdocs[i].page_content, ext)
+        B[i] = remove_blankline(B[i])
+    return B
 
 def initfromcmdlineargs():
     API_NAME         = "HFE"
