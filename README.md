@@ -3,7 +3,7 @@
 The branch focus the use of ollama and langchain to RAG from your documents. (see list of supported file extensions at the end)
 ```bash
 cd $HOME
-git clone -b ollama-rag --single-branch git@github.com:W-Wuxian/NANIKA.git
+git clone -b specificsplitting --single-branch git@github.com:W-Wuxian/NANIKA.git
 ```
 
 ## Install [ollama](https://github.com/ollama/ollama?tab=readme-ov-file)
