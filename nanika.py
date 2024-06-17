@@ -51,6 +51,8 @@ from langchain.retrievers.multi_query import MultiQueryRetriever
 os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 torchdevice = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 MAXNEWTOKENS = 8024
+#32064
+#8024
 
 def rag_generation(query, tokenizer, model, vectordb, k=3, fetch_k=6, **gen_parameters):
     """Generate text from a prompt after rag and print it."""
@@ -407,7 +409,7 @@ def specificsplitter(keys, **kwargs):
             )
         elif key == "f90" or key == "F90" or key == "f77" or key == "f08":
             splitter_fun[key] = RecursiveCharacterTextSplitter(
-                chunk_size=200,
+                chunk_size=1024,
                 chunk_overlap=0,
                 separators=["\n\n", "\n",  " ", "",
                 "\nprogram", "\nProgram", "\nPROGRAM",
