@@ -50,7 +50,7 @@ from langchain.retrievers.multi_query import MultiQueryRetriever
 
 os.environ['TOKENIZERS_PARALLELISM'] = 'false'
 torchdevice = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-MAXNEWTOKENS = 8024
+MAXNEWTOKENS = 32064
 #32064
 #8024
 
@@ -374,7 +374,7 @@ def specificsplitter(keys, **kwargs):
         if key == "txt":
             if embedding is None:
                 splitter_fun[key] = RecursiveCharacterTextSplitter(
-                    chunk_size=300,
+                    chunk_size=400,
                     chunk_overlap=30,
                     separators=["\n\n", "\n", r"(?<=[\.?!]\s+)",  " ", "",
                     "\u200b","\uff0c","\u3001","\uff0e","\u3002",]
@@ -390,7 +390,7 @@ def specificsplitter(keys, **kwargs):
                 )
         elif key == "py":
             splitter_fun[key] = RecursiveCharacterTextSplitter.from_language(
-                language="python", chunk_size=200, chunk_overlap=0
+                language="python", chunk_size=300, chunk_overlap=0
             )
         elif key == "c" or key == "h" or key == "cuh" or key == "cu":
             #splitter_fun[key] = RecursiveCharacterTextSplitter.from_language(
@@ -405,11 +405,11 @@ def specificsplitter(keys, **kwargs):
                 )
         elif key == "cpp" or key == "cc" or key == "c++" or key == "cxx" or key == "hpp":
             splitter_fun[key] = RecursiveCharacterTextSplitter.from_language(
-                language=Language.CPP, chunk_size=200, chunk_overlap=0
+                language=Language.CPP, chunk_size=300, chunk_overlap=0
             )
         elif key == "f90" or key == "F90" or key == "f77" or key == "f08":
             splitter_fun[key] = RecursiveCharacterTextSplitter(
-                chunk_size=1024,
+                chunk_size=400,
                 chunk_overlap=0,
                 separators=["\n\n", "\n",  " ", "",
                 "\nprogram", "\nProgram", "\nPROGRAM",
@@ -429,6 +429,12 @@ def specificsplitter(keys, **kwargs):
                 "\ndo while","\nDo While","\nDO WHILE",
                 "\nselect case","\nSelect case","\nSELECT CASE",
                 "\ncase","\nCase","\nCASE"]#r"(?<=\. )"
+            )
+        elif key == "md":
+            splitter_fun[key] = RecursiveCharacterTextSplitter(
+                language=Language.MARKDOWN,
+                chunk_size=1024,
+                chunk_overlap=0
             )
     return splitter_fun
 
@@ -674,7 +680,7 @@ keys = None
 documents = []
 if REUSE_VDB is False:
     # Load datas
-    splitted_data, keys = loaddata(IDOC_PATH, embedding=api_embeddings)
+    splitted_data, keys = loaddata(IDOC_PATH, embedding=None)#=api_embeddings)
     [print(e.value) for e in Language]
     #print(RecursiveCharacterTextSplitter.get_separators_for_language(Language.CPP))
     
@@ -723,7 +729,13 @@ if API_NAME == "OLE":
             base_url='http://192.168.2.16:11434',#base_url='http://192.168.2.16 OR 127.0.0.1 :11434' /api/chat
             model=local_model,
             num_ctx=MAXNEWTOKENS,
-            temperature=0
+            #mirostat=2,
+            #mirostat_eta=0.05,
+            #mirostat_tau=1.0,
+            temperature=0.1,
+            #top_k=50,
+            #top_p=0.91
+
         )
     elif BASE_URL[0:4] == "http":
         llm = ChatOllama(

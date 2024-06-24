@@ -86,3 +86,13 @@ python nanika.py -m phi3 -e nomic-embed-text -v ./database2 -c collection2 -r Tr
 | pptx           | :heavy_check_mark: |
 | md             | :heavy_check_mark: |
 | org            | :heavy_check_mark: |
+
+# Other
+
+```bash
+#Usage: ./genf.batch <number of files> <source directory> <number of lines> <repository directory> <file format extension>
+for ((i=1; i<=100; i++)); do ./genf.batch 1 ./sources 1 ./1F1L_RANDF/${i}_RANDF_MD txt; done
+python nanika.py -a OLE -m phi3:14b-medium-128k-instruct-q5_K_M -e snowflake-arctic-embed:335m -i "/home/vlederer/Bureau/HDR/FILE/1F1L_RANDF/1_RANDF_MD/file_1.md" -v 1F1LRANDF -c 1F1LRANDF -b "hermes" -d True
+for ((i=1; i<=100; i++)); do ./genf.batch 1 ./sources 100 ./1F100L_RANDF/${i}_RANDF_MD txt; done
+./gencmd.batch
+```
